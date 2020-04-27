@@ -1,165 +1,72 @@
-# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) Project 3: Web APIs & NLP
+# Project 3: Using Natural Language Processing to Distinguish Among Reddit Posts
 
-### Description
+## Data Science Problem
 
-In week four we've learned about a few different classifiers. In week five we'll learn about webscraping, APIs, and Natural Language Processing (NLP). This project will put those skills to the test.
+For this project, we were tasked with finding two different subreddits, culling posts from each, and using Natual Language Processing (NLP) to see how well we can classify posts as belonging to one or other subreddit.
 
-For project 3, your goal is two-fold:
-1. Using [Pushshift's](https://github.com/pushshift/api) API, you'll collect posts from two subreddits of your choosing.
-2. You'll then use NLP to train a classifier on which subreddit a given post came from. This is a binary classification problem.
+With the timing of this project coinciding with the 2020 NFL Draft, I selected the subreddits r/cowboys and r/eagles, two rival NFL franchises with dedicated fan bases \[I myself have been a Cowboys fan since I was six years old.\]
 
+**PRIMARY DATA SCIENCE PROBLEM**
 
-#### About the API
+Build a machine learning classifier that maximizes the accuracy of predicting r/cowboys posts ***without using obvious keywords/tokens***, but with particular emphasis on maximizing the model's Sensitivity (in other words, trying to minimize the chances of falsely predicting a true Cowboys fan to be an Eagles fan).
 
-Pushshift's API is fairly straightforward. For example, if I want the posts from [`/r/boardgames`](https://www.reddit.com/r/boardgames), all I have to do is use the following url: https://api.pushshift.io/reddit/search/submission?subreddit=boardgames
+**SECONDARY DATA SCIENCE PROBLEM**
 
-To help you get started, we have a primer video on how to use the API: https://youtu.be/AcrjEWsMi_E
+Uncover and diagnose which words are more indicative of one or the other fan bases heading into the draft.
 
----
+## Executive Summary
 
-### Requirements
+In order to execute this project, I collected 2000 reddit posts using the [Pushshift API](https://github.com/pushshift/api), scraping 1000 posts from the r/cowboys subreddit and 1000 posts from the r/eagles subreddit. Since I wanted to detect r/cowboys posts, I coded each subdataset as either a 1 (r/cowboys posts) or 0 (r/eagles posts), setting up a binary classification problem.
 
-- Gather and prepare your data using the `requests` library.
-- **Create and compare two models**. One of these must be a Bayes classifier, however the other can be a classifier of your choosing: logistic regression, KNN, SVM, etc.
-- A Jupyter Notebook with your analysis for a peer audience of data scientists.
-- An executive summary of your results.
-- A short presentation outlining your process and findings for a semi-technical audience.
+Because this project is about Natural Language Processing and not image evaluation, the two fields from the posts that I focused on for analysis were the "title" and "selftext" fields. Titles are typically like headlines and may contain anything from a few words to a couple of sentences. Selftext fields, when present, are more like paragraphs in their form. For the analysis, I concatenated the title and selftext fields into a single (sometimes lengthy) string. As a reference, about three-quarters of posts only consist of a title.
 
-**Pro Tip:** You can find a good example executive summary [here](https://www.proposify.biz/blog/executive-summary).
+At this point, the two files were merged, shuffled, and randomly split into train and test data files for modeling, with 1400 cases selected for training the machine learning classifier and 600 posts used as a holdout sample to evaluate model performance. Stratification was used to ensure that each of these files contained 50% r/cowboys posts and 50% r/eagles posts.
 
----
+The two datasets were cleaned by removing html and non-letter characters, converting all remaining characters to lowercase, and splitting the strings into "tokens", which are essentially any words or characters that are separated by spaces. These tokens were then lemmatized, which reduces multiple forms of the same word into a common base form. Stopwords were then removed in the final step prior to analysis. Stopwords are either words that have been consistently judged to provide little meaning in text analysis, or in this case, words that so obviously point to being from either subreddit as to make classification too easy. I wanted my machine learners to work hard!
 
-### Necessary Deliverables / Submission
+The analysis stream consisted of running the data through either of two types of vectorizers in order to convert the raw text data into numeric variables suitable for modeling. Count Vectorization simply sums or counts tokens used within each post (so values are integer counts from zero to theoretically infinity), while Tfidf Vectorization converts tokens to relative ratios of how many times a word occurs in a given post relative to the number of times it occurs across all posts in the data set. After vectorization, the data were run through a series of classification models, including:
 
-- Code and executive summary must be in a clearly commented Jupyter Notebook.
-- You must submit your slide deck.
-- Materials must be submitted by **10:00 AM on Friday, April 24th**.
+    - Logistic Regression Classifier
+    - Multinomial Naive Bayes Classifier
+    - Decision Tree Classifier
+    - Bagged Decision Tree Classifier
+    - Random Forests Classifier
+    - Extra Trees Classifier
+    - Gradient Boosting Classifier
+    - Support Vector Machine Classifier
 
----
+Model performance was judged against the baseline accuracy rate of 50%, as well as an "unfair" model where custom stopwords were not removed. Again, I was looking for a model that would be relatively high in accuracy, balance Sensitivity and Specificity (as shown by a high ROC AUC score), but lean towards maximizing Sensitivity.
 
-## Rubric
-Your local instructor will evaluate your project (for the most part) using the following criteria.  You should make sure that you consider and/or follow most if not all of the considerations/recommendations outlined below **while** working through your project.
+**Results**
 
-For Project 3 the evaluation categories are as follows:<br>
-**The Data Science Process**
-- Problem Statement
-- Data Collection
-- Data Cleaning & EDA
-- Preprocessing & Modeling
-- Evaluation and Conceptual Understanding
-- Conclusion and Recommendations
-
-**Organization and Professionalism**
-- Organization
-- Visualizations
-- Python Syntax and Control Flow
-- Presentation
-
-**Scores will be out of 30 points based on the 10 categories in the rubric.** <br>
-*3 points per section*<br>
-
-| Score | Interpretation |
-| --- | --- |
-| **0** | *Project fails to meet the minimum requirements for this item.* |
-| **1** | *Project meets the minimum requirements for this item, but falls significantly short of portfolio-ready expectations.* |
-| **2** | *Project exceeds the minimum requirements for this item, but falls short of portfolio-ready expectations.* |
-| **3** | *Project meets or exceeds portfolio-ready expectations; demonstrates a thorough understanding of every outlined consideration.* |
+Somewhat surprisingly, even the "unfair" model didn't have an easy time of it, only correctly predicting 80% of the posts (which is still a substantial improvement over the naive 50% accuracy rate baseline). The remaining models achieved accuracy ranging between 56-70% on cross-validated data. The "winning" model included Count Vectorized data passed through a Logistic Regression classifier with L1 (LASSO) regularization, resulting in a solution with 67% cross-validated accuracy, 72% Sensitivity, and a ROC AUC score of 72%. These represent decent performance, but not world-class classification levels.
 
 
-### The Data Science Process
+## Contents
+**Code**<br>
+[Technical Report](./code/technical-report.ipynb)
 
-**Problem Statement**
-- Is it clear what the goal of the project is?
-- What type of model will be developed?
-- How will success be evaluated?
-- Is the scope of the project appropriate?
-- Is it clear who cares about this or why this is important to investigate?
-- Does the student consider the audience and the primary and secondary stakeholders?
-
-**Data Collection**
-- Was enough data gathered to generate a significant result?
-- Was data collected that was useful and relevant to the project?
-- Was data collection and storage optimized through custom functions, pipelines, and/or automation?
-- Was thought given to the server receiving the requests such as considering number of requests per second?
-
-**Data Cleaning and EDA**
-- Are missing values imputed/handled appropriately?
-- Are distributions examined and described?
-- Are outliers identified and addressed?
-- Are appropriate summary statistics provided?
-- Are steps taken during data cleaning and EDA framed appropriately?
-- Does the student address whether or not they are likely to be able to answer their problem statement with the provided data given what they've discovered during EDA?
-
-**Preprocessing and Modeling**
-- Is text data successfully converted to a matrix representation?
-- Are methods such as stop words, stemming, and lemmatization explored?
-- Does the student properly split and/or sample the data for validation/training purposes?
-- Does the student test and evaluate a variety of models to identify a production algorithm (**AT MINIMUM:** Bayes and one other model)?
-- Does the student defend their choice of production model relevant to the data at hand and the problem?
-- Does the student explain how the model works and evaluate its performance successes/downfalls?
-
-**Evaluation and Conceptual Understanding**
-- Does the student accurately identify and explain the baseline score?
-- Does the student select and use metrics relevant to the problem objective?
-- Does the student interpret the results of their model for purposes of inference?
-- Is domain knowledge demonstrated when interpreting results?
-- Does the student provide appropriate interpretation with regards to descriptive and inferential statistics?
-
-**Conclusion and Recommendations**
-- Does the student provide appropriate context to connect individual steps back to the overall project?
-- Is it clear how the final recommendations were reached?
-- Are the conclusions/recommendations clearly stated?
-- Does the conclusion answer the original problem statement?
-- Does the student address how findings of this research can be applied for the benefit of stakeholders?
-- Are future steps to move the project forward identified?
+**Presentation**<br>
+[NLP Machine Learning Classification](./presentation/NLP%20Project%20-%20Jon%20Godin%20v01.pdf)
 
 
-### Organization and Professionalism
+## Conclusions and Recommendations
+As mentioned in the Executive Summary, classifying two NFL team-based subreddits proved to be a challenging task, even without removing obvious-classifying tokens (such as Cowboys, Eagles, Dallas, Philadelphia, etc.).
 
-**Project Organization**
-- Are modules imported correctly (using appropriate aliases)?
-- Are data imported/saved using relative paths?
-- Does the README provide a good executive summary of the project?
-- Is markdown formatting used appropriately to structure notebooks?
-- Are there an appropriate amount of comments to support the code?
-- Are files & directories organized correctly?
-- Are there unnecessary files included?
-- Do files and directories have well-structured, appropriate, consistent names?
+The reason for this is at least two-fold. For one thing, both subreddits consist of fans of NFL football, and therefore use a common vocabulary or terminology that may not differ enough for highly-accurate classification. And for another, I did not scrape a huge sample of posts, so some challenges may be a result of the relatively small sample size used for the analysis.
 
-**Visualizations**
-- Are sufficient visualizations provided?
-- Do plots accurately demonstrate valid relationships?
-- Are plots labeled properly?
-- Are plots interpreted appropriately?
-- Are plots formatted and scaled appropriately for inclusion in a notebook-based technical report?
+That said, my best models were able to achieve overall classification accuracy of 66% or better, Sensitivity scores over 70% and ROC AUC scores in the 70s. So the models were decent, though I obviously hoped for better performance. Unfortunately, all of the models showed a relatively large amount of overfitting to the training data.
 
-**Python Syntax and Control Flow**
-- Is care taken to write human readable code?
-- Is the code syntactically correct (no runtime errors)?
-- Does the code generate desired results (logically correct)?
-- Does the code follows general best practices and style guidelines?
-- Are Pandas functions used appropriately?
-- Are `sklearn` and `NLTK` methods used appropriately?
+Models using a Gradient Boosting Classifier were able to achieve the highest overall accuracy, though at the expense of lower Sensitivity. Multinomial Naive Bayes models also performed similarly.
 
-**Presentation**
-- Is the problem statement clearly presented?
-- Does a strong narrative run through the presentation building toward a final conclusion?
-- Are the conclusions/recommendations clearly stated?
-- Is the level of technicality appropriate for the intended audience?
-- Is the student substantially over or under time?
-- Does the student appropriately pace their presentation?
-- Does the student deliver their message with clarity and volume?
-- Are appropriate visualizations generated for the intended audience?
-- Are visualizations necessary and useful for supporting conclusions/explaining findings?
+Overall, the models that seemed best able to balance accuracy and Sensitivity were Logistic Regression Classifiers applying L1 (LASSO) regularization.
 
+Differences in word usage were revealed, with strong indicators often being references to various media members who cover one or the other team (such as Justin Melo or Todd Archer). Fans may have been reacting in the form of "did you see what Todd Archer posted?", for example. r/cowboys posts were more likely to contain references to other teams (like Tampa, Dolphins, Steelers, San Francisco). Certain vulgarities were more associated with one or the other subreddit as well.
 
----
+**Recommendations**
 
-### Why we choose this project for you?
-This project covers three of the biggest concepts we cover in the class: Classification Modeling, Natural Language Processing and Data Wrangling/Acquisition.
+For future research, larger and longer-term data pulls could be attempted to see whether increasing the overall sample size leads to less overfitting and better model performance.
 
-Part 1 of the project focuses on **Data wrangling/gathering/acquisition**. This is a very important skill as not all the data you will need will be in clean CSVs or a single table in SQL.  There is a good chance that wherever you land you will have to gather some data from some unstructured/semi-structured sources; when possible, requesting information from an API, but often scraping it because they don't have an API (or it's terribly documented).
+Many posts only consisted of title text without more substantial selftext entries, so another approach would be to screen for posts that contain both title and selftext content.
 
-Part 2 of the project focuses on **Natural Language Processing** and converting standard text data (like Titles and Comments) into a format that allows us to analyze it and use it in modeling.
-
-Part 3 of the project focuses on **Classification Modeling**.  Given that project 2 was a regression focused problem, we needed to give you a classification focused problem to practice the various models, means of assessment and preprocessing associated with classification.   
+Lastly, a more rigorous approach to removing stopwords (such as removing ALL current and former player/coach/GM names), and even local sports reporters, might yield more unique topics of interest to each fan base.
